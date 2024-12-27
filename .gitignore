@@ -1,0 +1,28 @@
+# Node.js関連
+node_modules/
+package-lock.json
+npm-debug.log
+yarn.lock
+pnpm-lock.yaml
+
+# ビルド成果物・配布用フォルダなど
+dist/
+build/
+coverage/
+*.log
+
+# OS固有ファイル
+.DS_Store
+Thumbs.db
+
+# 環境変数・秘密情報
+.env
+.env.*
+
+# エディタやIDEの設定
+.vscode/
+.idea/
+*.swp
+*.swo
+history/
+*.history/
