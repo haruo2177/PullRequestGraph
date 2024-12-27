@@ -212,6 +212,7 @@ async function fetchPullRequests(owner, repo, token) {
 function buildMermaidCode(prList) {
   let mermaid = "graph RL\n";
   for (const pr of prList) {
+    // タイトルに mermaid で使えない文字がある場合は空白で置換する
     const label = pr.title.replace(/\n|\[|\]|\(|\)|:/g, " ");
     const node = `PR#${pr.number} ${label}`;
     mermaid += `  ${pr.head.ref} --> |${node}| ${pr.base.ref}\n`;
