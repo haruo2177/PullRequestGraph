@@ -19,7 +19,63 @@ const openBrowser = async (url) => {
 // ここをご自分のOAuth Appのclient_idに置き換える
 const GITHUB_CLIENT_ID = "Iv23lisQN8lbBUcUl7yL";
 
+// ローカルに保存するトークンファイルのパス
+const TOKEN_FILE_PATH = "dist/github-access-token.json";
+
 ////////////////////////////////////////////////////////////////////////
+
+/**
+ * 1. 既存のトークンファイルを読み込み
+ *    - 存在しなければ null を返す
+ */
+function loadCachedToken() {
+  try {
+    if (fs.existsSync(TOKEN_FILE_PATH)) {
+      const raw = fs.readFileSync(TOKEN_FILE_PATH, "utf-8");
+      const data = JSON.parse(raw);
+      // data.access_token, data.created_at などを想定
+      return data;
+    }
+  } catch (err) {
+    console.error("[WARN] トークンファイル読み込みエラー:", err);
+  }
+  return null;
+}
+
+/**
+ * 2. トークンをファイルに保存
+ */
+function saveToken(data) {
+  try {
+    // ディレクトリが無い場合に備え、~/.config を作成
+    fs.mkdirSync(path.dirname(TOKEN_FILE_PATH), { recursive: true });
+    fs.writeFileSync(TOKEN_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
+    console.log(`[INFO] 新しいトークンを保存しました: ${TOKEN_FILE_PATH}`);
+  } catch (err) {
+    console.error("[ERROR] トークンファイル保存エラー:", err);
+  }
+}
+
+/**
+ * 3. トークンの有効性を簡易チェック (/user API)
+ *    - 200 が返れば有効、401などなら無効
+ */
+async function checkTokenValidity(token) {
+  const res = await fetch("https://api.github.com/user", {
+    headers: {
+      Accept: "application/vnd.github.v3+json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (res.ok) {
+    // 有効 → ユーザー情報を返す
+    const user = await res.json();
+    return user;
+  } else {
+    // 無効 (401,403など)
+    return null;
+  }
+}
 
 /**
  * 1. ローカルGitリポジトリの origin URLを取得し、owner/repo を解析
@@ -146,9 +202,13 @@ async function fetchPullRequests(owner, repo, token) {
  * 4. Mermaid グラフを生成
  */
 function buildMermaidCode(prList) {
-  let mermaid = "graph LR\n";
+  let mermaid = "graph RL\n";
+  console.log({ prList });
   for (const pr of prList) {
-    mermaid += `  ${pr.head.ref} --> |PR#${pr.number}| ${pr.base.ref}\n`;
+    const label = pr.title.replace(/\n|\[|\]|\(|\)|:/g, " ");
+    const node = `PR#${pr.number} ${label}`;
+    mermaid += `  ${pr.head.ref} --> |${node}| ${pr.base.ref}\n`;
+    mermaid += `  click ${pr.head.ref} href "${pr.html_url}"\n`;
   }
   return mermaid;
 }
@@ -162,11 +222,11 @@ function buildIndexHtml(mermaidCode) {
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>PullRequest Visualization (Device Flow)</title>
+  <title>Pull Request Graph</title>
   <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
 </head>
 <body>
-  <h1>Pull Request Visualization (Private Repo via Device Flow)</h1>
+  <h1>Pull Request Graph</h1>
   <div class="mermaid">
 ${mermaidCode}
   </div>
@@ -192,29 +252,55 @@ ${mermaidCode}
         "GITHUB_CLIENT_ID が未設定です。コード内を編集してください。"
       );
     }
+    // 1 キャッシュからトークン読み込み
+    let tokenData = loadCachedToken();
+    let token = tokenData?.access_token;
 
-    // 1. origin URLからオーナー/リポジトリを取得
+    // 2 トークンがある場合は有効か確認
+    if (token) {
+      console.log(
+        "[INFO] キャッシュ済みトークンが見つかりました。有効性をチェックします..."
+      );
+      const user = await checkTokenValidity(token);
+      if (!user) {
+        console.log(
+          "[INFO] トークンが無効または期限切れです。再ログインします..."
+        );
+        token = null;
+      } else {
+        console.log(`[INFO] 有効なトークンです。ユーザー: ${user.login}`);
+      }
+    }
+
+    // 3 トークンが無い or 無効なら Device Flow で認証
+    if (!token) {
+      token = await getAccessTokenByDeviceFlow(GITHUB_CLIENT_ID, "repo");
+      // 保存
+      const newTokenData = {
+        access_token: token,
+        created_at: new Date().toISOString(),
+      };
+      saveToken(newTokenData);
+    }
+
+    // 4. origin URLからオーナー/リポジトリを取得
     const originUrl = getOriginUrl();
     const { owner, repo } = parseGitHubRepo(originUrl);
 
-    // 2. Device Flow でログインしてアクセストークンを取得
-    console.log("[INFO] Device Flow を開始します...");
-    const token = await getAccessTokenByDeviceFlow(GITHUB_CLIENT_ID, "repo");
-
-    // 3. Pull Request 一覧を取得
+    // 5. Pull Request 一覧を取得
     console.log(`[INFO] Fetching Pull Requests for ${owner}/${repo} ...`);
     const prList = await fetchPullRequests(owner, repo, token);
     console.log(`[INFO] Found ${prList.length} PR(s).`);
 
-    // 4. Mermaid コードを生成
+    // 6. Mermaid コードを生成
     const mermaidCode = buildMermaidCode(prList);
 
-    // 5. index.html を生成
+    // 7. index.html を生成
     const html = buildIndexHtml(mermaidCode);
     const outPath = path.join(process.cwd(), "dist/index.html");
     fs.writeFileSync(outPath, html, "utf8");
 
-    // 6. 自動的にブラウザで開く
+    // 8. 自動的にブラウザで開く
     const fileUrl = `file://${outPath}`;
     console.log(`[INFO] index.html を生成しました: ${outPath}`);
     console.log("[INFO] ブラウザで自動オープンを試みます...");
