@@ -65,7 +65,7 @@ npm install -g <このパッケージ名>
 生成される `index.html` の中身（Mermaid 部分のみ抜粋）:
 
 ```mermaid
-graph LR
+graph RL
   feature/login-device-flow --> |PR#12| main
   fix/hotfix-bug            --> |PR#13| main
   ...
@@ -82,7 +82,7 @@ cd PullRequestGraph
 npm install
 
 # 2. プロジェクト直下のリポジトリを対象としてコマンドを実行
-node index.js
+node run start
 
 # → ブラウザでPR一覧のグラフが表示！
 ```
@@ -91,21 +91,6 @@ node index.js
 
 - **パブリックリポジトリのみ**であれば、未認証でも動作しますが、レートリミットが厳しい（1 時間に 60 回）点に注意してください。
 - **プライベートリポジトリを扱う場合**は、Device Flow で認証し、少なくとも `repo` スコープの権限が必要です。
-
-## よくある質問
-
-### Q1. なぜ「index.html」を毎回生成するのですか？
-
-Mermaid は GitHub Markdown などでも使えますが、**ローカルですぐにグラフをブラウザ表示したい**場合は HTML ファイルを生成して、自動で `mermaid.min.js` を読み込み → 即時に描画できるのが簡単かつ手軽です。
-
-### Q2. なぜ Device Flow？
-
-- **メリット**: コマンドライン実行時にブラウザで GitHub アカウントにログインするだけで、トークンや SSH キーを事前に用意せずに認証が可能。
-- **デメリット**: 毎回、ブラウザでのログイン操作が必要。CI や自動化には不向き。
-
-### Q3. CI/CD パイプラインで自動生成したい場合は？
-
-- 事前に GitHub Personal Access Token を仕込む or GitHub Actions でリポジトリへの読み取り権限を付与する方法が定番です。Device Flow は対話が必要なので自動化には不向きです。
 
 ## コントリビュート
 
