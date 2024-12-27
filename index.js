@@ -17,7 +17,7 @@ const openBrowser = async (url) => {
 ////////////////////////////////////////////////////////////////////////
 
 // ここをご自分のOAuth Appのclient_idに置き換える
-const GITHUB_CLIENT_ID = "YOUR_OAUTH_CLIENT_ID_HERE";
+const GITHUB_CLIENT_ID = "Iv23lisQN8lbBUcUl7yL";
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -62,7 +62,12 @@ async function getAccessTokenByDeviceFlow(clientId, scope = "repo") {
   if (!deviceCodeRes.ok) {
     throw new Error(`Device code request failed: ${deviceCodeRes.status}`);
   }
-  const deviceCodeData = await deviceCodeRes.json();
+
+  // レスポンスをテキストとして取得し、URLSearchParams でパース
+  const deviceCodeText = await deviceCodeRes.text();
+  const deviceCodeData = Object.fromEntries(
+    new URLSearchParams(deviceCodeText)
+  );
 
   console.log("-----------------------------------------------------");
   console.log(
@@ -206,7 +211,7 @@ ${mermaidCode}
 
     // 5. index.html を生成
     const html = buildIndexHtml(mermaidCode);
-    const outPath = path.join(process.cwd(), "index.html");
+    const outPath = path.join(process.cwd(), "dist/index.html");
     fs.writeFileSync(outPath, html, "utf8");
 
     // 6. 自動的にブラウザで開く
