@@ -16,12 +16,15 @@ const openBrowser = async (url) => {
 
 ////////////////////////////////////////////////////////////////////////
 
-// ここをご自分のOAuth Appのclient_idに置き換える
-const GITHUB_CLIENT_ID = "Iv23lisQN8lbBUcUl7yL";
-
-// ローカルに保存するトークンファイルのパス
-const TOKEN_FILE_PATH = "dist/github-access-token.json";
-
+const GITHUB_CLIENT_ID = "Ov23lil4jJ8g3BqALGwz";
+const TOKEN_FILE_PATH = path.join(
+  process.env.HOME || process.env.USERPROFILE,
+  ".config/pr-graph/token.json"
+);
+const OUT_FILE_PATH = path.join(
+  process.env.HOME || process.env.USERPROFILE,
+  ".config/pr-graph/index.html"
+);
 ////////////////////////////////////////////////////////////////////////
 
 /**
@@ -30,6 +33,7 @@ const TOKEN_FILE_PATH = "dist/github-access-token.json";
  */
 function loadCachedToken() {
   try {
+    console.log({ TOKEN_FILE_PATH });
     if (fs.existsSync(TOKEN_FILE_PATH)) {
       const raw = fs.readFileSync(TOKEN_FILE_PATH, "utf-8");
       const data = JSON.parse(raw);
@@ -185,13 +189,17 @@ async function getAccessTokenByDeviceFlow(clientId, scope = "repo") {
  * 3. Pull Requests 一覧を取得
  */
 async function fetchPullRequests(owner, repo, token) {
-  const url = `https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=100`;
+  const url = `https://api.github.com/repos/${owner}/${repo}/pulls?state=open`;
   const res = await fetch(url, {
     headers: {
-      Accept: "application/vnd.github.v3+json",
+      Accept: "application/vnd.github+json",
       Authorization: `Bearer ${token}`,
+      "X-GitHub-Api-Version": "2022-11-28",
     },
   });
+  if (res.status === 404) {
+    throw new Error(`リポジトリ ${owner}/${repo} が見つかりませんでした。`);
+  }
   if (!res.ok) {
     throw new Error(`GitHub API failed: ${res.status} ${res.statusText}`);
   }
@@ -243,10 +251,7 @@ ${mermaidCode}
 (async function main() {
   try {
     // 事前チェック
-    if (
-      !GITHUB_CLIENT_ID ||
-      GITHUB_CLIENT_ID.includes("YOUR_OAUTH_CLIENT_ID_HERE")
-    ) {
+    if (!GITHUB_CLIENT_ID) {
       throw new Error(
         "GITHUB_CLIENT_ID が未設定です。コード内を編集してください。"
       );
@@ -296,12 +301,11 @@ ${mermaidCode}
 
     // 7. index.html を生成
     const html = buildIndexHtml(mermaidCode);
-    const outPath = path.join(process.cwd(), "dist/index.html");
-    fs.writeFileSync(outPath, html, "utf8");
+    fs.writeFileSync(OUT_FILE_PATH, html, "utf8");
 
     // 8. 自動的にブラウザで開く
-    const fileUrl = `file://${outPath}`;
-    console.log(`[INFO] index.html を生成しました: ${outPath}`);
+    const fileUrl = `file://${OUT_FILE_PATH}`;
+    console.log(`[INFO] index.html を生成しました: ${OUT_FILE_PATH}`);
     console.log("[INFO] ブラウザで自動オープンを試みます...");
     await openBrowser(fileUrl);
     console.log(
