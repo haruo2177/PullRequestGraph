@@ -10,10 +10,6 @@ const openBrowser = async (url) => {
   return open.default(url);
 };
 
-// Node.js v18以上でも、これを使うと簡単
-// Node.js v18 以上ならグローバル fetch が使える（実験的）。v18未満なら:
-// const fetch = require('node-fetch');
-
 ////////////////////////////////////////////////////////////////////////
 
 const GITHUB_CLIENT_ID = "Ov23lil4jJ8g3BqALGwz";
@@ -33,7 +29,6 @@ const OUT_FILE_PATH = path.join(
  */
 function loadCachedToken() {
   try {
-    console.log({ TOKEN_FILE_PATH });
     if (fs.existsSync(TOKEN_FILE_PATH)) {
       const raw = fs.readFileSync(TOKEN_FILE_PATH, "utf-8");
       const data = JSON.parse(raw);
@@ -51,7 +46,7 @@ function loadCachedToken() {
  */
 function saveToken(data) {
   try {
-    // ディレクトリが無い場合に備え、~/.config を作成
+    // ディレクトリが無い場合に備え、~/.config/pr-graph を作成
     fs.mkdirSync(path.dirname(TOKEN_FILE_PATH), { recursive: true });
     fs.writeFileSync(TOKEN_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
     console.log(`[INFO] 新しいトークンを保存しました: ${TOKEN_FILE_PATH}`);
