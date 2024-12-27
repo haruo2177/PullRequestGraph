@@ -203,7 +203,6 @@ async function fetchPullRequests(owner, repo, token) {
  */
 function buildMermaidCode(prList) {
   let mermaid = "graph RL\n";
-  console.log({ prList });
   for (const pr of prList) {
     const label = pr.title.replace(/\n|\[|\]|\(|\)|:/g, " ");
     const node = `PR#${pr.number} ${label}`;
