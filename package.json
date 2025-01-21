@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "Pull Request とブランチを取得し、Mermaid 形式で可視化する Node.js ツール。GitHub Device Flow を用いてプライベートリポジトリにも対応します。",
   "main": "index.js",
+  "bin": {
+    "prg": "index.js"
+  },
   "scripts": {
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
