@@ -6,7 +6,12 @@ import { spawnSync } from "child_process";
 export function getPullRequests() {
   const result = spawnSync(
     "gh",
-    ["pr", "list", "--json", "number,baseRefName,headRefName,title,url"],
+    [
+      "pr",
+      "list",
+      "--json",
+      "number,baseRefName,headRefName,title,isDraft,url",
+    ],
     { encoding: "utf-8" }
   );
 
@@ -32,13 +37,26 @@ export function buildMermaidCode(prList) {
   let mermaid = "graph RL\n";
 
   for (const pr of prList) {
-    // Mermaid で使えない文字を空白に置換
-    const label = pr.title.replace(/\n|\[|\]|\(|\)|:/g, " ");
-    const node = `PR#${pr.number} ${label}`;
-    // headRefName から baseRefName へ矢印を描画
-    mermaid += `  ${pr.headRefName} --> |${node}| ${pr.baseRefName}\n`;
-    // クリック時に PR URL を開く
-    mermaid += `  click ${pr.headRefName} href "${pr.url}"\n`;
+    const title = pr.title.replace(/"/g, "#quot;"); // ダブルクォーテーションをエスケープする
+
+    // node
+    const baseNode = pr.baseRefName;
+    const headNode = pr.headRefName;
+    const headNodeLabel = title;
+    const headNodeClasses = [
+      pr.headRefName.split("/").at(0),
+      pr.isDraft ? "draft" : "open",
+    ].flatMap((x) => (x ? [x] : []));
+
+    // link
+    const link = pr.isDraft ? "Draft" : "Open";
+
+    // append code
+    mermaid += `  ${headNode}("${headNodeLabel}") --> |${link}| ${baseNode}\n`;
+    mermaid += `  click ${headNode} href "${pr.url}" _blank\n`;
+    headNodeClasses.forEach((nodeClass) => {
+      mermaid += `  class ${headNode} ${nodeClass}\n`;
+    });
   }
 
   return mermaid;
