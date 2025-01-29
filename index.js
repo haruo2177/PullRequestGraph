@@ -5,6 +5,7 @@ import {
   buildMermaidCode,
   buildIndexHtml,
   openBrowser,
+  getRepositoryName,
 } from "./utils.js";
 import { OUT_FILE_PATH } from "./constants.js";
 
@@ -15,8 +16,11 @@ console.log("[INFO] プルリクエスト一覧を取得しました:", pullRequ
 // Mermaid コードを生成
 const mermaidCode = buildMermaidCode(pullRequests);
 
+// リポジトリ名を取得
+const repositoryName = getRepositoryName();
+
 // index.html を生成
-const html = buildIndexHtml(mermaidCode);
+const html = buildIndexHtml(repositoryName, mermaidCode);
 
 // ファイルに書き出し
 fs.writeFileSync(OUT_FILE_PATH, html, "utf8");

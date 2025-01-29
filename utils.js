@@ -55,22 +55,42 @@ export function buildMermaidCode(prList) {
   return mermaid;
 }
 
+export function getRepositoryName() {
+  const result = spawnSync("gh", ["repo", "view", "--json", "name"], {
+    encoding: "utf-8",
+  });
+
+  // コマンド実行時のエラー処理
+  if (result.error) {
+    console.error("gh コマンドの実行に失敗しました:", result.error);
+    process.exit(1);
+  }
+  if (result.status !== 0) {
+    console.error("gh コマンドがエラーを返しました:\n", result.stderr);
+    process.exit(result.status ?? 1);
+  }
+
+  // JSON をパースしてリポジトリ名を返す
+  const repositoryName = JSON.parse(result.stdout).name;
+  return repositoryName;
+}
+
 /**
  * Mermaid.js を埋め込んだ HTML を生成します。
  */
-export function buildIndexHtml(mermaidCode) {
+export function buildIndexHtml(repositoryName, mermaidCode) {
   const htmlContent = `<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>PullRequest Visualization</title>
+  <title>Pull Request Graph ( ${repositoryName} )</title>
   <!-- Mermaid.js を読み込み -->
   <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
   <!-- D3.js を読み込み -->
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 </head>
 <body>
-  <h1>Pull Request Visualization</h1>
+  <h1>Pull Request Graph ( ${repositoryName} )</h1>
   <div class="mermaid">
 ${mermaidCode}
   </div>
@@ -79,7 +99,8 @@ ${mermaidCode}
     // ページ読み込み時に自動で Mermaid グラフを描画
     mermaid.initialize({
       startOnLoad: true,
-      theme: 'default'
+      theme: 'default',
+      securityLevel: 'loose'
     });
     // SVG にズーム機能を追加
     window.addEventListener('load', function () {
