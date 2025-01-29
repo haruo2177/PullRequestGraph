@@ -43,10 +43,6 @@ export function buildMermaidCode(prList) {
     const baseNode = pr.baseRefName;
     const headNode = pr.headRefName;
     const headNodeLabel = title;
-    const headNodeClasses = [
-      pr.headRefName.split("/").at(0),
-      pr.isDraft ? "draft" : "open",
-    ].flatMap((x) => (x ? [x] : []));
 
     // link
     const link = pr.isDraft ? "Draft" : "Open";
@@ -54,9 +50,6 @@ export function buildMermaidCode(prList) {
     // append code
     mermaid += `  ${headNode}("${headNodeLabel}") --> |${link}| ${baseNode}\n`;
     mermaid += `  click ${headNode} href "${pr.url}" _blank\n`;
-    headNodeClasses.forEach((nodeClass) => {
-      mermaid += `  class ${headNode} ${nodeClass}\n`;
-    });
   }
 
   return mermaid;
