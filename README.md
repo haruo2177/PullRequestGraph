@@ -35,8 +35,8 @@ npx prg
 
 ```mermaid
 graph RL
-  feature/login-device-flow --> |PR#12| main
-  fix/hotfix-bug            --> |PR#13| main
+  認証機能を実装する --> |Open| main
+  特殊記号をサニタイズする --> |Draft| main
   ...
 ```
 
