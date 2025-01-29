@@ -9,7 +9,6 @@ export function getPullRequests() {
     ["pr", "list", "--json", "number,baseRefName,headRefName,title,url"],
     { encoding: "utf-8" }
   );
-  console.log("[DEBUG] gh コマンドの実行結果:", result);
 
   // コマンド実行時のエラー処理
   if (result.error) {
